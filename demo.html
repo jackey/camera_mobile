@@ -1,0 +1,84 @@
+<?php 
+	if (count($_POST)) {
+		print_r($_POST);
+		die();
+	}
+?>
+<!doctype html>
+<html>
+<head>
+        <script language="JavaScript" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script language="JavaScript" src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+        <script language="JavaScript" src="/lib/scriptcam/scriptcam.js"></script>
+
+	<title>Capture image from camera</title>
+	<script type="text/javascript">
+		(function ($) {
+			$(document).ready(function () {
+				//初始化拍照
+				$("#capture_camera").scriptcam({
+					path: "/lib/scriptcam/",
+					width: 600,
+					height: 500,
+					onWebcamReady: showCurrentVersion,
+					onError: onError,
+                    cornerRadius:20,
+                    cornerColor:'e3e5e2',
+				});
+
+				// 拍照
+				$("#take_snapshot").click(function (event) {
+					event.preventDefault();
+					var image_data = $.scriptcam.getFrameAsBase64();
+					$("#capture_image").attr("src","data:image/png;base64,"+$.scriptcam.getFrameAsBase64());
+					return false;
+				});
+
+				// 上传
+				$("input[name='upload']").click(function () {
+					var image_data = "data:image/jpg;base64," + $.scriptcam.getFrameAsBase64();
+					var blob = dataURItoBlob(image_data);
+					var fd = new FormData($("form[name='capture_media']").get(0));
+					fd.append("file", blob, "media.jpg");
+					var xhr = new XMLHttpRequest();
+					xhr.open("POST" ,"/upload.php", true);
+					xhr.onreadystatechange = function (res) {
+						if ( xhr.readyState == 4 ) {
+							console.log(xhr.responseText);
+						}
+					}
+					xhr.send(fd);
+				});
+			});
+
+			function showCurrentVersion() {
+				$.scriptcam.version();
+			}
+
+			function onError(errorId, errorMsg) {
+				alert(errorMsg);
+			}
+
+			function dataURItoBlob(dataURI) {
+			    var binary = atob(dataURI.split(',')[1]);
+			    var array = [];
+			    for(var i = 0; i < binary.length; i++) {
+			        array.push(binary.charCodeAt(i));
+			    }
+			    return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+			}
+
+		})(jQuery);
+	</script>
+</head>
+<body>
+	<div id="capture_camera"></div>
+	<div><a href="#" onclick="javascript: return void(0)" id="take_snapshot">Take snapshot</a></div>
+	<div>
+		<img src="" id="capture_image">
+	</div>
+	<form name="capture_media" enctype="multipart/form-data" method="POST">
+		<input type="button" name="upload" value="Upload" />
+	</form>
+</body>
+</html>
